@@ -10,6 +10,7 @@ module SEPA
 
   class Message
     include ActiveModel::Validations
+    include Converter::InstanceMethods
 
     attr_reader :account, :grouped_transactions
 
@@ -76,11 +77,14 @@ module SEPA
     # Returns the id of the batch to which the given transaction belongs
     # Identified based upon the reference of the transaction
     def batch_id(transaction_reference)
+      transaction_reference = convert_text(transaction_reference)
       grouped_transactions.each do |group, transactions|
         if transactions.select { |transaction| transaction.reference == transaction_reference }.any?
           return payment_information_identification(group)
         end
       end
+
+      raise RuntimeError.new("Cannot find batch id for transaction reference: #{transaction_reference}")
     end
 
     def batches
